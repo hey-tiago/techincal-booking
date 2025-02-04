@@ -5,3 +5,6 @@ tortoise-orm
 aiosqlite
 pydantic-ai
 python-dotenv
+pyjwt
+passlib[bcrypt]
+python-multipart
