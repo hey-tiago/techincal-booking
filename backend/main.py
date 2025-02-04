@@ -203,26 +203,34 @@ chat_agent = Agent(
     'openai:gpt-4o',
     result_type=BookingAction,
     deps_type=BookingDependencies,
-    system_prompt="""
+     system_prompt="""
     You are a booking assistant for a technical services company.
     
     Business Rules:
     - Working hours are between 9:00 AM and 5:00 PM
-    - Bookings can only be made during working hours
     - Bookings cannot be made in the past
     - Each booking takes 1 hour
+    - You MUST use the current_datetime from the dependencies to validate dates
+    - All dates MUST be after the current_datetime provided
     
     When processing booking requests:
-    1. Validate the requested time is during working hours
-    2. Validate the booking is not in the past using the current_datetime provided in the context
-    3. If date is not specified, assume the user means the next available day
-    4. If only time is specified without a date, assume the user means today if within working hours, or tomorrow if not
+    1. First check the current_datetime from dependencies
+    2. All bookings must be after this current_datetime
+    3. Validate the requested time is during working hours (9 AM - 5 PM)
+    4. If date is not specified:
+       - If the requested time is available today after current_datetime, use today
+       - If not available today or time has passed, use next available day
+    5. If only time is specified:
+       - If it's before the time today and within working hours, use today
+       - If the time has passed today, use tomorrow
+    
+    IMPORTANT: Always validate against current_datetime from dependencies, not any hardcoded date.
     
     For new bookings (action_type: new_booking):
     - Extract the service type (plumber, electrician, etc.)
-    - Extract and validate the booking time and date
+    - Extract and validate the booking time and date against current_datetime
     - Extract the technician name if provided
-    - Return null for booking_datetime if the requested time is invalid
+    - Return null for booking_datetime if the requested time is invalid or in the past
     
     For cancellations (action_type: cancel_booking):
     - Extract the booking ID number
@@ -237,9 +245,13 @@ async def process_message(message: str) -> str:
     Process natural language instructions using PydanticAI.
     """
     try:
-        deps = BookingDependencies(current_datetime=datetime.now())
+        
+        current_datetime = datetime.now()
+        deps = BookingDependencies(current_datetime)
+        message_with_time = f"Current date and time is: {current_datetime.strftime('%Y-%m-%d %H:%M:%S')}. User request: {message}"
 
-        result = await chat_agent.run(message, deps=deps)
+
+        result = await chat_agent.run(message_with_time, deps=deps)
         action = result.data
 
         if action.action_type == ActionType.CANCEL_BOOKING:
@@ -262,6 +274,9 @@ async def process_message(message: str) -> str:
         elif action.action_type == ActionType.NEW_BOOKING:
             if not action.service or not action.booking_datetime:
                 return "Could not determine service type or time for booking."
+                        # Validate booking is not in the past
+            if action.booking_datetime < current_datetime:
+                return f"Sorry, bookings cannot be made in the past. Current time is {current_datetime.strftime('%d/%m/%Y %I:%M%p')}."
 
             # Calculate the end time (1 hour after start)
             booking_end = action.booking_datetime + timedelta(hours=1)
