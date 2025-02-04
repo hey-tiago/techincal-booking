@@ -20,13 +20,18 @@ const AuthPage = () => {
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  // Helper function to safely access localStorage
+  // Helper function to safely access cookies
   const safeGetToken = () => {
     if (typeof window === "undefined") return null;
     try {
-      return localStorage.getItem("token");
+      // Check cookie instead of localStorage
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("token=")
+      );
+      return tokenCookie ? tokenCookie.split("=")[1] : null;
     } catch (err) {
-      console.error("Error accessing localStorage:", err);
+      console.error("Error accessing cookies:", err);
       return null;
     }
   };
@@ -90,8 +95,7 @@ const AuthPage = () => {
         }
         const data = await response.json();
 
-        // Set both localStorage and cookie
-        localStorage.setItem("token", data.access_token);
+        // Set cookie only (remove localStorage)
         document.cookie = `token=${data.access_token}; path=/`;
 
         router.push("/dashboard");
@@ -100,6 +104,12 @@ const AuthPage = () => {
         alert("Login error.");
       }
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    router.push("/");
   };
 
   return (

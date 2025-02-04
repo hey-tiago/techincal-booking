@@ -49,7 +49,6 @@ interface Booking {
 
 const DashboardPage = () => {
   const router = useRouter();
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState<string>("");
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -63,24 +62,28 @@ const DashboardPage = () => {
   const [showBookings, setShowBookings] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Helper function to safely access localStorage
-  const safeGetToken = () => {
-    if (typeof window === "undefined") return null;
+  // Update safeGetToken to only use cookies
+  const safeGetToken = (): string | null => {
     try {
-      return localStorage.getItem("token");
+      if (typeof window === "undefined") return null;
+      const cookies = document.cookie.split(";");
+      const tokenCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith("token=")
+      );
+      return tokenCookie ? tokenCookie.split("=")[1] : null;
     } catch (err) {
-      console.error("Error accessing localStorage:", err);
+      console.error("Error accessing cookies:", err);
       return null;
     }
   };
 
   useEffect(() => {
     const storedToken = safeGetToken();
+    console.log("storedToken", storedToken);
     if (!storedToken) {
       router.push("/");
       return;
     }
-    setToken(storedToken);
     setLoading(false);
   }, [router]);
 
@@ -104,7 +107,9 @@ const DashboardPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(safeGetToken()
+            ? { Authorization: `Bearer ${safeGetToken()}` }
+            : {}),
         },
         body: JSON.stringify({ message: input }),
       });
@@ -135,13 +140,13 @@ const DashboardPage = () => {
   };
 
   const fetchMyBookings = async () => {
-    if (!token) return;
+    if (!safeGetToken()) return;
     try {
       const response = await fetch("http://localhost:8000/my-bookings", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${safeGetToken()}`,
         },
       });
       if (!response.ok) {
@@ -162,7 +167,7 @@ const DashboardPage = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     router.push("/");
   };
 

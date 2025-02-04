@@ -8,14 +8,17 @@ export function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get("token");
+  const path = request.nextUrl.pathname;
 
   // Protect dashboard routes
-  if (!token && request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (!token && path.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
   // Redirect authenticated users away from auth pages
-  if (token && request.nextUrl.pathname === "/") {
+  // Only redirect if explicitly on the auth page, not other root routes
+  if (token && path === "/") {
+    console.log("Redirecting to dashboard", token);
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
