@@ -4,19 +4,22 @@ from app.models.booking import Booking
 from app.models.user import User
 from app.schemas.booking import BookingIn, BookingOut
 from app.core.security import get_current_user
+from app.core.logging_config import setup_logger
 
+
+logger = setup_logger(__name__)
 router = APIRouter()
 
 @router.get("/my-bookings", response_model=List[BookingOut])
 async def my_bookings(current_user: User = Depends(get_current_user)):
     """List bookings for the current authenticated user."""
-    print(f"Current user: {current_user}")  # Debug log
+    logger.info(f"Current user: {current_user}")  # Debug log
     try:
         bookings = await Booking.filter(user_id=current_user.id)
-        print(f"Found bookings: {bookings}")  # Debug log
+        logger.info(f"Found bookings: {bookings}")  # Debug log
         return bookings
     except Exception as e:
-        print(f"Error in my_bookings: {str(e)}")  # Debug log
+        logger.info(f"Error in my_bookings: {str(e)}")  # Debug log
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching bookings: {str(e)}"

@@ -7,7 +7,10 @@ from datetime import datetime
 from app.core.config import settings
 from app.api.endpoints import auth, bookings, chat
 from app.models.booking import Booking
+from app.core.logging_config import setup_logger
 
+
+logger = setup_logger(__name__)
 # Database initialization
 async def init_db():
     if not await Booking.all().exists():
@@ -24,9 +27,9 @@ async def init_db():
             await Booking.create(
                 technician_name="Griselda Dickson", service="Welder", booking_datetime=dt3
             )
-            print("Database seeded with initial booking data.")
+            logger.info("Database seeded with initial booking data.")
         except Exception as e:
-            print(f"Error seeding database: {e}")
+            logger.info(f"Error seeding database: {e}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

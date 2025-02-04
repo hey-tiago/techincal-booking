@@ -3,8 +3,11 @@ from datetime import timedelta
 from typing import List
 import os
 from dotenv import load_dotenv
+from app.core.logging_config import setup_logger
 
 load_dotenv()
+
+logger = setup_logger(__name__)
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Technician Booking System"

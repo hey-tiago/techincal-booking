@@ -9,3 +9,4 @@ pyjwt
 passlib[bcrypt]
 python-multipart
 pydantic_settings
+pydantic_graph

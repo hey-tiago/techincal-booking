@@ -1,5 +1,4 @@
 from tortoise import fields, models
-from datetime import datetime
 
 class Booking(models.Model):
     id = fields.IntField(pk=True)
@@ -16,3 +15,11 @@ class Booking(models.Model):
 
     class Meta:
         table = "booking" 
+
+    def model_dump(self, **kwargs) -> dict:
+        return {
+            "id": self.id,
+            "technician_name": self.technician_name,
+            "service": self.service,
+            "booking_datetime": self.booking_datetime.strftime('%Y-%m-%d %H:%M:%S')
+        }
