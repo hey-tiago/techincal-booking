@@ -24,7 +24,6 @@ const AuthPage = () => {
   const safeGetToken = () => {
     if (typeof window === "undefined") return null;
     try {
-      // Check cookie instead of localStorage
       const cookies = document.cookie.split(";");
       const tokenCookie = cookies.find((cookie) =>
         cookie.trim().startsWith("token=")
@@ -104,12 +103,6 @@ const AuthPage = () => {
         alert("Login error.");
       }
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    router.push("/");
   };
 
   return (
