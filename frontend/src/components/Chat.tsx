@@ -7,15 +7,9 @@ import React, {
   FormEvent,
   useRef,
 } from "react";
-import {
-  Box,
-  TextField,
-  Typography,
-  IconButton,
-  Paper,
-  Button,
-} from "@mui/material";
+import { Box, TextField, Typography, Paper, Button } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
+import ReactMarkdown from "react-markdown";
 
 interface ChatMessageDetails {
   id?: number;
@@ -27,7 +21,7 @@ interface ChatMessageDetails {
 interface ChatMessage {
   sender: string;
   text?: string;
-  messageType: "text" | "booking_details" | "error";
+  messageType: "text" | "booking_details" | "error" | "markdown";
   details?: ChatMessageDetails;
 }
 
@@ -60,6 +54,8 @@ const Chat: React.FC<ChatProps> = ({ getToken }) => {
       messageType: "text",
     };
     setMessages((prev) => [...prev, userMessage]);
+    const previousInput = input; // Store the input before clearing
+    setInput(""); // Clear input immediately after sending
 
     try {
       const response = await fetch("http://localhost:8000/chat", {
@@ -68,7 +64,7 @@ const Chat: React.FC<ChatProps> = ({ getToken }) => {
           "Content-Type": "application/json",
           ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
         },
-        body: JSON.stringify({ message: input }),
+        body: JSON.stringify({ message: previousInput }),
       });
       const data = await response.json();
       const systemMessage: ChatMessage = {
@@ -88,8 +84,8 @@ const Chat: React.FC<ChatProps> = ({ getToken }) => {
           messageType: "error",
         },
       ]);
+      setInput(previousInput); // Restore the input if the request fails
     }
-    setInput("");
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -104,7 +100,7 @@ const Chat: React.FC<ChatProps> = ({ getToken }) => {
         sx={{
           display: "flex",
           justifyContent: isUser ? "flex-end" : "flex-start",
-          mb: 1,
+          mb: 2,
         }}
       >
         <Box
@@ -112,27 +108,117 @@ const Chat: React.FC<ChatProps> = ({ getToken }) => {
             maxWidth: "70%",
             backgroundColor: isUser ? "#0B57D0" : "#F3F4F6",
             borderRadius: "16px",
-            px: 2,
+            px: 3,
             py: 1,
             color: isUser ? "white" : "inherit",
+            "& p": {
+              lineHeight: 1.6,
+              letterSpacing: "0.03em",
+              margin: "0.5em 0",
+              fontSize: "1rem",
+            },
+            "& strong": {
+              fontWeight: 600,
+            },
+            "& ul, & ol": {
+              paddingLeft: "1.5em",
+              margin: "0.5em 0",
+            },
+            "& li": {
+              marginBottom: "0.3em",
+            },
+            "& code": {
+              backgroundColor: isUser
+                ? "rgba(255,255,255,0.1)"
+                : "rgba(0,0,0,0.05)",
+              padding: "0.2em 0.4em",
+              borderRadius: "4px",
+              fontSize: "0.9em",
+            },
           }}
         >
-          <Typography variant="body1">{msg.text}</Typography>
-          {msg.messageType === "booking_details" && msg.details && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="body2">
-                <strong>Service ID:</strong> {msg.details.id}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Service:</strong> {msg.details.service}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Technician:</strong> {msg.details.technician}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Date/Time:</strong> {msg.details.datetime}
-              </Typography>
+          {msg.messageType === "markdown" ? (
+            <Box
+              sx={{
+                "& .markdown-content": {
+                  width: "100%",
+                },
+              }}
+            >
+              <ReactMarkdown className="markdown-content">
+                {msg.text || ""}
+              </ReactMarkdown>
             </Box>
+          ) : msg.messageType === "booking_details" && msg.details ? (
+            <>
+              <Typography
+                variant="body1"
+                sx={{
+                  mb: 1.5,
+                  fontSize: "1rem",
+                  lineHeight: 1.6,
+                  letterSpacing: "0.01em",
+                }}
+              >
+                {msg.text}
+              </Typography>
+              <Box sx={{ mt: 1.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mb: 1,
+                    fontSize: "0.95rem",
+                    lineHeight: 1.5,
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  <strong>Service ID:</strong> {msg.details.id}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mb: 1,
+                    fontSize: "0.95rem",
+                    lineHeight: 1.5,
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  <strong>Service:</strong> {msg.details.service}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    mb: 1,
+                    fontSize: "0.95rem",
+                    lineHeight: 1.5,
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  <strong>Technician:</strong> {msg.details.technician}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontSize: "0.95rem",
+                    lineHeight: 1.5,
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  <strong>Date/Time:</strong> {msg.details.datetime}
+                </Typography>
+              </Box>
+            </>
+          ) : (
+            <Typography
+              variant="body1"
+              sx={{
+                fontSize: "1rem",
+                lineHeight: 1.6,
+                letterSpacing: "0.01em",
+              }}
+            >
+              {msg.text}
+            </Typography>
           )}
         </Box>
       </Box>

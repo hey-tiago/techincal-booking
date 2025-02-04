@@ -108,48 +108,58 @@ const AuthPage = () => {
   return (
     <>
       <CssBaseline />
-      <Container maxWidth="sm" sx={{ mt: 4 }}>
-        <Paper sx={{ p: 4 }}>
-          <Typography variant="h5" align="center" gutterBottom>
-            {authMode === "login" ? "Login" : "Sign Up"}
-          </Typography>
-          <Box
-            component="form"
-            onSubmit={handleAuthSubmit}
-            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-          >
-            <TextField
-              label="Username"
-              variant="outlined"
-              fullWidth
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-            <TextField
-              label="Password"
-              variant="outlined"
-              type="password"
-              fullWidth
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <Button type="submit" variant="contained" color="primary">
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          py: 4,
+        }}
+      >
+        <Container maxWidth="sm">
+          <Paper sx={{ p: 4 }}>
+            <Typography variant="h5" align="center" gutterBottom>
               {authMode === "login" ? "Login" : "Sign Up"}
-            </Button>
-          </Box>
-          <Box mt={2} textAlign="center">
-            <Button
-              onClick={() =>
-                setAuthMode(authMode === "login" ? "signup" : "login")
-              }
+            </Typography>
+            <Box
+              component="form"
+              onSubmit={handleAuthSubmit}
+              sx={{ display: "flex", flexDirection: "column", gap: 2 }}
             >
-              {authMode === "login"
-                ? "Don't have an account? Sign Up"
-                : "Already have an account? Login"}
-            </Button>
-          </Box>
-        </Paper>
-      </Container>
+              <TextField
+                label="Username"
+                variant="outlined"
+                fullWidth
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <TextField
+                label="Password"
+                variant="outlined"
+                type="password"
+                fullWidth
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Button type="submit" variant="contained" color="primary">
+                {authMode === "login" ? "Login" : "Sign Up"}
+              </Button>
+            </Box>
+            <Box mt={2} textAlign="center">
+              <Button
+                onClick={() =>
+                  setAuthMode(authMode === "login" ? "signup" : "login")
+                }
+              >
+                {authMode === "login"
+                  ? "Don't have an account? Sign Up"
+                  : "Already have an account? Login"}
+              </Button>
+            </Box>
+          </Paper>
+        </Container>
+      </Box>
     </>
   );
 };

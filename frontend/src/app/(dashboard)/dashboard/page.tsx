@@ -52,15 +52,30 @@ const DashboardPage = () => {
   }, [router]);
 
   const fetchMyBookings = async () => {
-    if (!safeGetToken()) return;
+    const token = safeGetToken();
+    if (!token) return;
+
     try {
-      const response = await fetch("http://localhost:8000/my-bookings", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${safeGetToken()}`,
-        },
-      });
+      const response = await fetch(
+        "http://localhost:8000/bookings/my-bookings",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${safeGetToken()}`,
+          },
+        }
+      );
+
+      if (response.status === 422) {
+        const errorData = await response.json();
+        console.group("422 Error:");
+        console.error(errorData);
+        console.groupEnd();
+        alert("Authentication error. Please try logging in again.");
+        return;
+      }
+
       if (!response.ok) {
         alert("Failed to fetch bookings.");
         return;
@@ -74,8 +89,10 @@ const DashboardPage = () => {
   };
 
   const handleShowBookings = async () => {
-    await fetchMyBookings();
-    setShowBookings(!showBookings);
+    if (!showBookings) {
+      await fetchMyBookings();
+    }
+    setShowBookings((prev) => !prev);
   };
 
   const handleLogout = () => {
@@ -102,7 +119,7 @@ const DashboardPage = () => {
       <Box sx={{ backgroundColor: "#F3F4F6", minHeight: "100vh" }}>
         <AppBar
           position="static"
-          sx={{ backgroundColor: "white", boxShadow: 1 }}
+          sx={{ backgroundColor: "white", boxShadow: 2, borderRadius: 0 }}
         >
           <Toolbar>
             <Typography variant="h6" sx={{ flexGrow: 1, color: "#111827" }}>

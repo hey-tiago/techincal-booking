@@ -18,7 +18,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 echo -e "${BLUE}Starting backend server...${NC}"
-python main.py &
+python app/main.py &
 BACKEND_PID=$!
 
 echo -e "${BLUE}Setting up frontend...${NC}"
