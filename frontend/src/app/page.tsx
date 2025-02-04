@@ -8,28 +8,39 @@ import React, {
   useRef,
 } from "react";
 import {
-  AppBar,
   Box,
   Container,
   CssBaseline,
   IconButton,
-  InputAdornment,
   Paper,
   TextField,
-  Toolbar,
   Typography,
-  Avatar,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 
+interface MessageDetails {
+  id?: number;
+  service?: string;
+  technician?: string;
+  datetime?: string;
+}
+
 interface Message {
   sender: string;
-  text: string;
+  text?: string;
+  messageType: "text" | "booking_details" | "error";
+  details?: MessageDetails;
 }
 
 const Home: React.FC = () => {
   const [input, setInput] = useState<string>("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      sender: "System",
+      text: "Hello! How can I help you today?",
+      messageType: "text",
+    },
+  ]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to the bottom of the chat whenever messages update
@@ -41,26 +52,36 @@ const Home: React.FC = () => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // Add user's message to the chat history.
-    const userMessage: Message = { sender: "User", text: input };
+    const userMessage: Message = {
+      sender: "User",
+      text: input,
+      messageType: "text",
+    };
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      // Send the message to the backend /chat endpoint.
       const response = await fetch("http://localhost:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: input }),
       });
       const data = await response.json();
-
-      const systemMessage: Message = { sender: "System", text: data.response };
+      const systemMessage: Message = {
+        sender: "System",
+        text: data.response.text,
+        messageType: data.response.message_type,
+        details: data.response.details,
+      };
       setMessages((prev) => [...prev, systemMessage]);
     } catch (error) {
       console.error("Error:", error);
       setMessages((prev) => [
         ...prev,
-        { sender: "System", text: "Error processing request." },
+        {
+          sender: "System",
+          text: "Error processing request.",
+          messageType: "error",
+        },
       ]);
     }
     setInput("");
@@ -70,7 +91,86 @@ const Home: React.FC = () => {
     setInput(e.target.value);
   };
 
-  // Render chat bubbles with different styles for User and System messages.
+  const renderMessageContent = (msg: Message) => {
+    if (msg.messageType === "booking_details" && msg.details) {
+      return (
+        <>
+          {msg.text && (
+            <Typography
+              variant="body1"
+              gutterBottom
+              sx={{
+                fontWeight: 500,
+                color: "#1a73e8",
+                mb: 2,
+              }}
+            >
+              {msg.text}
+            </Typography>
+          )}
+          <Box
+            sx={{
+              backgroundColor: "white",
+              p: 3,
+              m: -2,
+              borderRadius: 1,
+              border: "1px solid #e8eaed",
+            }}
+          >
+            <Typography
+              variant="body1"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                mb: 1,
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>Service ID:</span>{" "}
+              {msg.details.id}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                mb: 1,
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>Service:</span>{" "}
+              {msg.details.service}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                mb: 1,
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>Technician:</span>{" "}
+              {msg.details.technician}
+            </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>Date/Time:</span>{" "}
+              {msg.details.datetime}
+            </Typography>
+          </Box>
+        </>
+      );
+    }
+    return <Typography variant="body1">{msg.text}</Typography>;
+  };
+
   const renderMessage = (msg: Message, index: number) => {
     const isUser = msg.sender === "User";
     return (
@@ -79,74 +179,74 @@ const Home: React.FC = () => {
         display="flex"
         flexDirection="row"
         justifyContent={isUser ? "flex-end" : "flex-start"}
-        mb={1}
+        mb={2}
       >
-        {!isUser && (
-          <Avatar
-            sx={{ bgcolor: "primary.main", mr: 1, width: 32, height: 32 }}
-          >
-            S
-          </Avatar>
-        )}
         <Paper
-          elevation={3}
+          elevation={0}
           sx={{
-            p: 1.5,
+            p: 2,
             maxWidth: "70%",
-            backgroundColor: isUser ? "primary.light" : "grey.200",
-            color: isUser ? "primary.contrastText" : "text.primary",
+            backgroundColor: isUser ? "#0B57D0" : "#F3F6FC",
+            color: isUser ? "white" : "black",
             borderRadius: 2,
-            wordWrap: "break-word",
           }}
         >
-          <Typography variant="body1">{msg.text}</Typography>
+          {renderMessageContent(msg)}
         </Paper>
-        {isUser && (
-          <Avatar
-            sx={{ bgcolor: "secondary.main", ml: 1, width: 32, height: 32 }}
-          >
-            U
-          </Avatar>
-        )}
       </Box>
     );
   };
 
   return (
-    <>
-      <CssBaseline />
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div">
-            Technician Booking Chat
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <CssBaseline>
       <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
         <Paper
+          elevation={1}
           sx={{
-            height: "60vh",
-            display: "flex",
-            flexDirection: "column",
-            p: 2,
             borderRadius: 2,
+            overflow: "hidden",
           }}
         >
+          {/* Header */}
+          <Box sx={{ p: 2, borderBottom: "1px solid #E0E0E0" }}>
+            <Typography
+              variant="h6"
+              color="text.secondary"
+              sx={{ fontSize: "1rem", fontWeight: "bold" }}
+            >
+              Technician scheduling support
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ fontSize: "0.875rem" }}
+            >
+              We typically reply within a few minutes
+            </Typography>
+          </Box>
+
+          {/* Messages Area */}
           <Box
             sx={{
-              flexGrow: 1,
+              height: "50vh",
               overflowY: "auto",
-              mb: 2,
-              px: 1,
+              p: 2,
+              backgroundColor: "#f9f9f9",
             }}
           >
             {messages.map((msg, index) => renderMessage(msg, index))}
             <div ref={messagesEndRef} />
           </Box>
+
+          {/* Input Area */}
           <Box
             component="form"
             onSubmit={handleSend}
-            sx={{ display: "flex", alignItems: "center" }}
+            sx={{
+              p: 2,
+              borderTop: "1px solid #E0E0E0",
+              backgroundColor: "white",
+            }}
           >
             <TextField
               fullWidth
@@ -154,20 +254,37 @@ const Home: React.FC = () => {
               placeholder="Type your message..."
               value={input}
               onChange={handleInputChange}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: "24px",
+                  backgroundColor: "#F3F6FC",
+                  "& fieldset": {
+                    borderColor: "transparent",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: "transparent",
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: "transparent",
+                  },
+                },
+              }}
               InputProps={{
                 endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton type="submit" color="primary">
-                      <SendIcon />
-                    </IconButton>
-                  </InputAdornment>
+                  <IconButton
+                    type="submit"
+                    color="primary"
+                    sx={{ color: "#0B57D0" }}
+                  >
+                    <SendIcon />
+                  </IconButton>
                 ),
               }}
             />
           </Box>
         </Paper>
       </Container>
-    </>
+    </CssBaseline>
   );
 };
 

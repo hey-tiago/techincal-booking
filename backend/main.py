@@ -240,6 +240,23 @@ chat_agent = Agent(
     """
 )
 
+from typing import Optional, Dict, Any
+
+class BookingDetails(BaseModel):
+    id: int
+    service: str
+    technician_name: str
+    booking_datetime: datetime
+
+    def format_datetime(self) -> str:
+        return self.booking_datetime.strftime('%Y-%m-%d %I:%M%p')
+
+class ChatResponse(BaseModel):
+    message_type: str  # 'text', 'booking_details', 'error'
+    text: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+
+
 async def process_message(message: str) -> str:
     """
     Process natural language instructions using PydanticAI.
@@ -265,11 +282,21 @@ async def process_message(message: str) -> str:
                 return f"Booking ID {action.booking_id} not found"
 
         elif action.action_type == ActionType.GET_BOOKING_ID:
-            booking = await Booking.all().order_by("-id").first()
+            booking = await Booking.filter(id=action.booking_id).first()
             if booking:
-                return f"Your booking ID is {booking.id}"
-            else:
-                return "No bookings found."
+                return ChatResponse(
+                    message_type="booking_details",
+                    details={
+                        "id": booking.id,
+                        "service": booking.service,
+                        "technician": booking.technician_name,
+                        "datetime": booking.booking_datetime.strftime('%Y-%m-%d %I:%M%p')
+                    }
+                )
+            return ChatResponse(
+                message_type="text",
+                text="No booking found with that ID."
+            )
 
         elif action.action_type == ActionType.NEW_BOOKING:
             if not action.service or not action.booking_datetime:
@@ -293,15 +320,26 @@ async def process_message(message: str) -> str:
                         f"is not available for {action.service}. Each booking requires a 1-hour window.")
 
             booking = await Booking.create(
-                technician_name=action.service,
+                technician_name=action.technician_name or action.service,
                 service=action.service,
                 booking_datetime=action.booking_datetime,
             )
-            return (f"Booking confirmed for {booking.booking_datetime.strftime('%d/%m/%Y %I:%M%p')} "
-                    f"with booking ID {booking.id}")
+            return ChatResponse(
+                message_type="booking_details",
+                text="Booking confirmed:",
+                details={
+                    "id": booking.id,
+                    "service": booking.service,
+                    "technician": booking.technician_name,
+                    "datetime": booking.booking_datetime.strftime('%Y-%m-%d %I:%M%p')
+                }
+            )
 
     except Exception as e:
-        return f"Sorry, I couldn't process that request: {str(e)}"
+        return ChatResponse(
+            message_type="error",
+            text=f"Sorry, I couldn't process that request: {str(e)}"
+        )
 
 # -------------------------------
 # Console Application Interface
