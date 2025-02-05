@@ -26,6 +26,7 @@ chmod +x dev.sh
 
 ## Main Features
 
+- Authentication
 - List bookings
 - Retrieve booking
 - Delete booking
