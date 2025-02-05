@@ -649,12 +649,11 @@ class ClarificationNode(BaseNode[ChatState]):
     async def run(self, ctx: GraphRunContext[ChatState]) -> End[ChatResponse]:
         logger.info("[ClarificationNode] Calling clarification_agent")
         clar_result = await clarification_agent.run(self.context_message, message_history=ctx.state.conversation_history)
-        response_text = str(clar_result.data)
         updated_history = clar_result.all_messages()
         ctx.state.conversation_history = updated_history
         return End(ChatResponse(
             message_type="clarification",
-            text=response_text,
+            text=self.routing_decision.clarifying_question or str(clar_result.data),
             conversation_history=[safe_message_to_dict(msg) for msg in updated_history]
         ))
 
